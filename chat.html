@@ -1,0 +1,48 @@
+<link rel="stylesheet" href="css/bootstrap.min.css">
+<script src="js/jquery-1.11.3.min.js" ></script>
+<script src="js/bootstrap.min.js" ></script>
+<script src="node_modules/socket.io-client/socket.io.js"></script>
+<!-- Chat Area -->
+<div id="messages"></div>
+
+<div id="userName" style="position:fixed; top:0; right:0"> </div>
+
+<div class="chatFooter">
+	<input id="messageInput" type="text" class="input-xxlarge" placeHolder="Message" />
+	<button id="sendBtn">Send</button>
+</div>
+
+<!-- Chat Area ends -->
+
+<script>
+	var socket = io.connect( 'http://localhost:8080' );
+	var userName = localStorage.getItem('username');
+	var userId = localStorage.getItem('userId');
+	$('#userName').html( userName );
+	socket.emit('join', {userName: userName, userId: userId});
+	$(document).ready(function() {
+		$( '#sendBtn').click( function(e) {
+			e.preventDefault();
+			var msg = $( '#messageInput' ).val();
+			socket.emit( 'client_msg', {
+				userName: userName,
+				message: msg,
+				userId : userId
+			});
+			var actualContent = $('#messages').html();
+			var newMsgContent = '<li><strong>You: </strong>: '+ msg +'</li>';
+			var content = actualContent + newMsgContent;
+			$( '#messages' ).html( content );
+			$('#messages').val('');
+		});
+
+		socket.on( 'admin_msg', function( data ) {
+			var actualContent = $('#messages').html();
+			var newMsgContent = '<li><strong>'+data.userName+'</strong>: '+ data.message +'</li>';
+			var content = actualContent + newMsgContent;
+			$( '#messages' ).html( content );
+		});
+
+
+	});
+</script>

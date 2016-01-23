@@ -1,0 +1,134 @@
+<style>
+	li.list-group-item {
+	    border-radius: 0px!important;
+	}
+	.noPadding {
+		padding:0px!important;
+	}
+
+	.msgLi {
+		padding: 3%;
+	}
+
+	.sendInput {
+		border-left: 0px!important;
+	    border-top: 0px!important;
+	    border-radius: 0px!important;
+	}
+	.eachChat {
+		height: 180px;
+		margin-left:10px;
+		overflow: scroll;
+		overflow-x: hidden;
+	}
+</style>
+<link rel="stylesheet" href="css/bootstrap.min.css">
+<script src="js/jquery-1.11.3.min.js" ></script>
+<script src="js/bootstrap.min.js" ></script>
+<script src="node_modules/socket.io-client/socket.io.js"></script>
+<!-- Chat Area -->
+<div id="userName" style="position:fixed; top:0; right:0"> </div>
+<nav class="navbar navbar-default">
+  <div class="container-fluid">
+    <div class="navbar-header">
+		<a class="navbar-brand" href="#">Chat</a>
+    </div>
+  </div>
+</nav>
+<div class="row">
+<div id="chatListArea" class="col-md-2">
+	
+	<ul id="chatList" class="list-group">
+		
+	</ul>
+</div>
+<div id="allChat" class="col-md-10 row">
+	
+</div>
+	
+
+</div>
+
+
+
+<script>
+	var socket = io.connect( 'http://localhost:8080' );
+	var userName = localStorage.getItem('username');
+	var userId = localStorage.getItem('userId');
+	$('#userName').html( userName );
+	socket.emit('join', {userName: userName, userId: userId});
+	$(document).ready(function() {
+		console.log()
+
+		socket.on("client_msg", function(data) {
+			console.log('new message');
+			console.log( data );
+			if( $('#'+data.userName+'_'+data.userId).length == 0 ) {
+				$('#allChat').append('<div class="eachChat col-md-3 noPadding" id='+data.userName+'_'+data.userId+'></div>')
+				var appendHtml = '<div class="input-group"><input type="text" class="form-control sendInput" id="sendTo_'+data.userName+'_'+data.userId+ '"></input>'
+								 +'<span class="input-group-btn sendBtn" id="sendBtn_'
+								 +data.userName+'_'+data.userId+ '"><span class="input-group-btn"> <button class="btn btn-default" type="button">Go!</button></span></span></div>'
+								 +'<ul class="msgLi" id="msgLi_'+data.userName+'_'+data.userId+ '"><li class="list-unstyled"><strong>'+data.userName+'</strong>: '+ data.message +'</li></ul>';
+				$('#'+data.userName+'_'+data.userId)
+					.append( appendHtml );
+			} else {
+				$('#msgLi_'+data.userName+'_'+data.userId).append( '<li class="list-unstyled"><strong>'+data.userName+'</strong>: '+ data.message +'</li>' );
+			}
+		});
+
+		socket.on("client_joined", function(data) {
+			console.log( 'client joined \n' );
+			console.log( data );
+			var usersLi = data.allUsers
+							.filter( function( val ) {
+								return val != 'admin_1'
+							})
+							.map( function(val) {
+								return '<li class="list-group-item">'+val+'</li>'
+							});
+			usersLi = usersLi.join('');
+			$('#chatList').html( usersLi );
+		});
+
+		socket.on( 'disconnected', function( data ) {
+			var usersLi = data
+							.filter( function( val ) {
+								return val != 'mobisyadmin_1'
+							})
+							.map( function(val) {
+								return '<li>'+val+'</li>'
+							});
+
+			usersLi = usersLi.join('');
+			$('#chatList').html( usersLi );
+		})
+
+		$('body').on('click', '.sendBtn', function() {
+			var userName = $(this).attr('id').split('_')[1];
+			var userId = $(this).attr('id').split('_')[2];
+			console.log( userName + '    ' + userId );
+			var sendText = $('#sendTo_' + userName + '_' + userId ).val();
+			console.log( sendText );
+			socket.emit( 'admin_msg', {
+				userName: userName,
+				userId: userId,
+				message: sendText
+			});
+			$('#sendTo_' + userName + '_' + userId ).val('');
+			$('#msgLi_'+userName+'_'+userId).append( '<li class="list-unstyled"><strong>You</strong>: '+ sendText +'</li>' );
+		})
+	});
+
+
+</script>
+
+<style>
+	
+	.eachChat {
+		border:1px solid #ccc;
+	}
+	.eachChat li {
+		text-decoration: none;
+	}
+
+</style>
